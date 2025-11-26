@@ -1,0 +1,63 @@
+{
+    "cSpell.words": [
+        "activitys",
+        "Avitvity",
+        "Avtivity",
+        "CICD",
+        "datetimerange",
+        "dont",
+        "fesjs",
+        "godoc",
+        "gonic",
+        "gookit",
+        "gorm",
+        "Itemds",
+        "Jsapi",
+        "jsqr",
+        "mapp",
+        "MBTI",
+        "ohayo",
+        "paypay",
+        "smallint",
+        "testh",
+        "tinyint",
+        "udid",
+        "undeactivate",
+        "Uped",
+        "urfave",
+        "varchar",
+        "wangeditor",
+        "wechat",
+        "wslogger",
+        "Zhang",
+        "zhong"
+    ],
+    "editor.formatOnSave": true,
+    // "[vue]": {
+    //     "editor.defaultFormatter": "Vue.volar"
+    // },
+    "[javascript]": {
+        "editor.defaultFormatter": "vscode.typescript-language-features"
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "octref.vetur"
+        // "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[json]": {
+        "editor.defaultFormatter": "vscode.json-language-features",
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true
+    },
+    "[jsonc]": {
+        "editor.defaultFormatter": "vscode.json-language-features",
+        "editor.tabSize": 4,
+        "editor.insertSpaces": true
+    },
+    "[vue]": {
+        "editor.defaultFormatter": "octref.vetur"
+    },
+    // "eslint.validate": ["javascript", "vue"],
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+    }
+}
