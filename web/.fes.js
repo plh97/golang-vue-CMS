@@ -42,6 +42,12 @@ export default defineBuildConfig({
         icon: 'UserOutlined',
         // icon: '/user.svg',
       },
+      {
+        name: 'permission/list',
+        match: ['permission/*'],
+        icon: 'UserOutlined',
+        // icon: '/user.svg',
+      },
     ],
   },
   enums: {

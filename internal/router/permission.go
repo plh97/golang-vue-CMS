@@ -6,16 +6,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func InitRoleRouter(
+func InitPermissionRouter(
 	deps RouterDeps,
 	r *gin.RouterGroup,
 ) {
 	// Non-strict permission routing group
 	noStrictAuthRouter := r.Group("/").Use(middleware.NoStrictAuth(deps.JWT, deps.Logger))
 	{
-		noStrictAuthRouter.GET("/role/list", deps.RoleHandler.GetRoleList)
-		noStrictAuthRouter.POST("/role", deps.RoleHandler.CreateRole)
-		noStrictAuthRouter.PUT("/role", deps.RoleHandler.UpdateRolePermissions)
+		noStrictAuthRouter.GET("/permission/list", deps.PermissionHandler.GetPermissionList)
+		noStrictAuthRouter.POST("/permission", deps.PermissionHandler.CreatePermission)
 	}
 
 	// Strict permission routing group

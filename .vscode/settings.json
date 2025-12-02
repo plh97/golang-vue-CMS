@@ -54,7 +54,7 @@
         "editor.insertSpaces": true
     },
     "[vue]": {
-        "editor.defaultFormatter": "octref.vetur"
+        "editor.defaultFormatter": "Vue.volar"
     },
     // "eslint.validate": ["javascript", "vue"],
     "editor.codeActionsOnSave": {

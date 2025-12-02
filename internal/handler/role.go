@@ -27,22 +27,22 @@ func NewRoleHandler(
 func (h *RoleHandler) GetRoleList(ctx *gin.Context) {
 	roleList, err := h.roleService.GetRoleList(ctx)
 	if err != nil {
-		fmt.Println("error:", err)
 		v1.HandleError(ctx, http.StatusOK, v1.ErrBadRequest, nil)
 		return
 	}
 
-	v1.HandleSuccess(ctx, roleList)
+	v1.HandleSuccess(ctx, v1.GetRoleListResponseData{
+		List: roleList,
+	})
 }
 
-
 func (h *RoleHandler) CreateRole(ctx *gin.Context) {
-	var req v1.UpdateProfileRequest
+	var req v1.CreateRoleRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		v1.HandleError(ctx, http.StatusBadRequest, v1.ErrBadRequest, nil)
 		return
 	}
-	role, err := h.roleService.CreateRole(ctx)
+	role, err := h.roleService.CreateRole(ctx, req)
 	if err != nil {
 		fmt.Println("error:", err)
 		v1.HandleError(ctx, http.StatusOK, v1.ErrBadRequest, nil)
@@ -50,4 +50,24 @@ func (h *RoleHandler) CreateRole(ctx *gin.Context) {
 	}
 
 	v1.HandleSuccess(ctx, role)
+}
+
+// UpdateRolePermissions
+func (h *RoleHandler) UpdateRolePermissions(ctx *gin.Context) {
+	var req v1.UpdateRolePermissionsRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		v1.HandleError(ctx, http.StatusBadRequest, v1.ErrBadRequest, nil)
+		return
+	}
+
+	// Here you would typically call a service method to update the role's permissions.
+	// For example:
+	err := h.roleService.UpdateRolePermissions(ctx, req.ID, req.PermissionIds)
+	if err != nil {
+	    v1.HandleError(ctx, http.StatusOK, v1.ErrBadRequest, nil)
+	    return
+	}
+
+	// For now, we'll just return a success response.
+	v1.HandleSuccess(ctx, gin.H{"message": "Role permissions updated successfully"})
 }

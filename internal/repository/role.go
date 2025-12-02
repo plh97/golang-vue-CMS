@@ -7,8 +7,9 @@ import (
 
 type RoleRepository interface {
 	GetRole(ctx context.Context, id int64) (*model.Role, error)
-	CreateRole(ctx context.Context) (*model.Role, error)
 	GetRoleList(ctx context.Context) ([]model.Role, error)
+	CreateRole(ctx context.Context, role *model.Role) (*model.Role, error)
+	UpdateRole(ctx context.Context, role *model.Role) (*model.Role, error)
 }
 
 func NewRoleRepository(
@@ -30,42 +31,27 @@ func (r *roleRepository) GetRole(ctx context.Context, id int64) (*model.Role, er
 }
 
 func (r *roleRepository) GetRoleList(ctx context.Context) ([]model.Role, error) {
-	// 1. 变量名用复数 roles (好习惯)
 	var roles []model.Role
-
-	// 2. 链式调用
-	// WithContext(ctx): 传递上下文
-	// Order("sort desc"): 加上排序（通常角色列表需要按顺序展示）
-	// Find(&roles): 查询
-	// .Error: 获取错误信息
-	err := r.db.WithContext(ctx).Find(&roles).Error
-
-	// 3. 严谨的错误处理
+	err := r.db.WithContext(ctx).Preload("Permissions").Find(&roles).Error
 	if err != nil {
 		return nil, err
 	}
-
-	// 4. 直接返回 slice，不需要取地址 &
 	return roles, nil
 }
 
+// CreateRole 创建角色
+// 参数：需要把要创建的角色数据 (role) 传进来
+// 返回：error (如果创建失败)
+func (r *roleRepository) CreateRole(ctx context.Context, role *model.Role) (*model.Role, error) {
+	// err := r.db.WithContext(ctx).Create(role).Error
+	err := r.DB(ctx).
+		Model(&role).
+		Association("Permissions").
+		Replace(role.Permissions) // 传入的是完整的 Permission 实体数组 (可能为空)
+	return role, err
+}
 
-func (r *roleRepository) CreateRole(ctx context.Context) (*model.Role, error) {
-	// 1. 变量名用复数 roles (好习惯)
-	var role *model.Role
-
-	// 2. 链式调用
-	// WithContext(ctx): 传递上下文
-	// Order("sort desc"): 加上排序（通常角色列表需要按顺序展示）
-	// Find(&roles): 查询
-	// .Error: 获取错误信息
-	err := r.db.WithContext(ctx).Find(&role).Error
-
-	// 3. 严谨的错误处理
-	if err != nil {
-		return nil, err
-	}
-
-	// 4. 直接返回 slice，不需要取地址 &
-	return role, nil
+func (r *roleRepository) UpdateRole(ctx context.Context, role *model.Role) (*model.Role, error) {
+	err := r.db.WithContext(ctx).Save(role).Error
+	return role, err
 }

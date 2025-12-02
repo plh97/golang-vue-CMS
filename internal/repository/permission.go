@@ -6,7 +6,8 @@ import (
 )
 
 type PermissionRepository interface {
-	GetPermission(ctx context.Context, id int64) (*model.Permission, error)
+	GetPermissionList(ctx context.Context) ([]model.Permission, error)
+	CreatePermission(ctx context.Context, permission *model.Permission) (*model.Permission, error)
 }
 
 func NewPermissionRepository(
@@ -21,8 +22,16 @@ type permissionRepository struct {
 	*Repository
 }
 
-func (r *permissionRepository) GetPermission(ctx context.Context, id int64) (*model.Permission, error) {
-	var permission model.Permission
+func (r *permissionRepository) GetPermissionList(ctx context.Context) ([]model.Permission, error) {
+	var permissionList []model.Permission
+	err := r.db.WithContext(ctx).Find(&permissionList).Error
+	if err != nil {
+		return nil, err
+	}
+	return permissionList, nil
+}
 
-	return &permission, nil
+func (r *permissionRepository) CreatePermission(ctx context.Context, permission *model.Permission) (*model.Permission, error) {
+	err := r.db.WithContext(ctx).Create(permission).Error
+	return permission, err
 }
