@@ -20,12 +20,8 @@ func AuthMiddleware(e *casbin.Enforcer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// method := c.Request.Method
 		check(e, "zhangsan", "/index", "GET")
-		check(e, "zhangsan1", "/index", "GET")
-		// e.AddPolicy("zhangsan1", "/index", "GET")
-		// e.SavePolicy()
-		e.RemovePolicy("zhangsan1", "/index", "GET")
-		e.SavePolicy()
-		check(e, "zhangsan1", "/index", "GET")
+		e.AddRoleForUser("wangwu", "admin")
+		check(e, "wangwu", "/index", "GET")
 		c.Next()
 	}
 }
