@@ -1,7 +1,7 @@
 package casbinPkg
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -11,15 +11,31 @@ import (
 	"gorm.io/gorm"
 )
 
+// NewEnforcer 初始化 Casbin Enforcer
 func NewEnforcer(db *gorm.DB) *casbin.CachedEnforcer {
-	a, _ := gormadapter.NewAdapterByDB(db)
+	a, err := gormadapter.NewAdapterByDB(db)
+	if err != nil {
+		fmt.Println("创建 Casbin 适配器失败:", err)
+		return nil
+	}
 	cwd, _ := os.Getwd()
 	m, err := model.NewModelFromFile(filepath.Join(cwd, "config", "model.conf"))
 	if err != nil {
-		log.Fatalf("failed to create Casbin enforcer. Check paths: Model=%v. Error: %v", m, err)
+		fmt.Println("创建 NewModelFromFile 失败:", err)
+		return nil
 	}
-	e, _ := casbin.NewCachedEnforcer(m, a)
-	e.SetExpireTime(60 * 60)
-	e.LoadPolicy()
-	return e
+	enforcer, err := casbin.NewCachedEnforcer(m, a)
+	if err != nil {
+		fmt.Println("创建 Casbin Enforcer 失败:", err)
+		return nil
+	}
+	if enforcer == nil {
+		fmt.Println("Casbin Enforcer 初始化失败，返回 nil")
+		return nil
+	}
+	if err := enforcer.LoadPolicy(); err != nil {
+		fmt.Println("加载 Casbin 策略失败:", err)
+		return nil
+	}
+	return enforcer
 }

@@ -2,25 +2,25 @@ package service
 
 import (
 	"context"
-	"fmt"
 	v1 "go-nunu/api/v1"
 	"go-nunu/internal/model"
 	"go-nunu/internal/repository"
 
 	"github.com/casbin/casbin/v2"
+	"gorm.io/gorm"
 )
 
 type RoleService interface {
-	GetRole(ctx context.Context, id int) (*model.Role, error)
+	GetRole(ctx context.Context, id int64) (*model.Role, error)
 	CreateRole(ctx context.Context, req v1.CreateRoleRequest) (*model.Role, error)
-	GetRoleList(ctx context.Context, req v1.GetRoleListRequest) ([]v1.RoleInfo, int, error)
-	UpdateRolePermissions(ctx context.Context, roleId int, permissionIds []uint) error
+	GetRoleList(ctx context.Context, req v1.GetRoleListRequest) ([]model.Role, int, error)
+	UpdateRolePermissions(ctx context.Context, roleId int64, permissionIds []uint) error
 }
 
 func NewRoleService(
 	service *Service,
 	roleRepository repository.RoleRepository,
-	casbin casbin.CachedEnforcer,
+	casbin *casbin.CachedEnforcer,
 ) RoleService {
 	return &roleService{
 		Service:        service,
@@ -32,10 +32,10 @@ func NewRoleService(
 type roleService struct {
 	*Service
 	roleRepository repository.RoleRepository
-	Casbin         casbin.CachedEnforcer
+	Casbin         *casbin.CachedEnforcer
 }
 
-func (s *roleService) GetRole(ctx context.Context, id int) (*model.Role, error) {
+func (s *roleService) GetRole(ctx context.Context, id int64) (*model.Role, error) {
 	return s.roleRepository.GetRole(ctx, id)
 }
 
@@ -51,7 +51,7 @@ func (s *roleService) CreateRole(ctx context.Context, req v1.CreateRoleRequest) 
 	}
 	err = s.UpdateRolePermissions(
 		ctx,
-		int(role.ID),
+		int64(role.ID),
 		req.PermissionIds,
 	)
 	if err != nil {
@@ -60,7 +60,7 @@ func (s *roleService) CreateRole(ctx context.Context, req v1.CreateRoleRequest) 
 	return role, err
 }
 
-func (s *roleService) GetRoleList(ctx context.Context, req v1.GetRoleListRequest) ([]v1.RoleInfo, int, error) {
+func (s *roleService) GetRoleList(ctx context.Context, req v1.GetRoleListRequest) ([]model.Role, int, error) {
 	roles, err := s.roleRepository.GetRoleList(ctx, req)
 	if err != nil {
 		return nil, 0, err
@@ -72,43 +72,55 @@ func (s *roleService) GetRoleList(ctx context.Context, req v1.GetRoleListRequest
 	return roles, count, nil
 }
 
-func (s *roleService) UpdateRolePermissions(ctx context.Context, roleID int, permissionIDs []uint) error {
-	// 1. 必须先获取角色信息，拿到角色的 Key (Sid)
-	role, err := s.roleRepository.GetRole(ctx, roleID)
-	if err != nil {
-		return fmt.Errorf("获取角色失败: %v", err)
+func (s *roleService) UpdateRolePermissions(ctx context.Context, roleID int64, permissionIDs []uint) error {
+	var role model.Role
+
+	// 1. 查找角色
+	if err := s.DB(ctx).First(&role, roleID).Error; err != nil {
+		return err
 	}
 
-	// 2. 获取权限列表
-	permissions, err := s.roleRepository.GetPermissionsByIds(ctx, permissionIDs)
-	if err != nil {
-		return fmt.Errorf("获取权限失败: %v", err)
+	// 2. 查询完整的权限对象（包含 Path 和 Method）
+	var permissions []model.Permission
+	if err := s.DB(ctx).Find(&permissions, permissionIDs).Error; err != nil {
+		return err
+	}
+	if len(permissionIDs) == 0 {
+		permissions = nil
 	}
 
-	// 3. 更新 Casbin 策略
-	// Casbin 中的 Subject 应该是角色的 Key (例如 "admin")，而不是 ID
-	sub := role.Sid
-
-	// 3.1 先清除该角色在 Casbin 中的旧策略
-	// RemoveFilteredPolicy(0, sub) 表示删除第一列(v0/subject)等于 sub 的所有规则
-	// if _, err := s.Casbin.Enforcer.RemoveFilteredPolicy(0, sub); err != nil {
-	// 	return fmt.Errorf("清除旧策略失败: %v", err)
-	// }
-
-	// 3.2 添加新策略
-	var rules [][]string
-	for _, perm := range permissions {
-		if perm.Path == "" || perm.Method == "" {
-			continue
+	err := s.DB(ctx).Transaction(func(tx *gorm.DB) error {
+		// 3. 更新数据库关联表
+		if err := tx.Model(&role).Association("Permissions").Replace(&permissions); err != nil {
+			return err
 		}
-		// 对应 Casbin 规则: p, role_key, path, method
-		rules = append(rules, []string{sub, perm.Path, perm.Method})
-	}
 
-	if len(rules) > 0 {
-		if _, err := s.Casbin.Enforcer.AddPolicies(rules); err != nil {
-			return fmt.Errorf("添加新策略失败: %v", err)
+		// 4. 同步 Casbin 策略（关键步骤）
+		sub := role.Sid
+
+		// 4.1 清除该角色的旧策略
+		if _, err := s.Casbin.RemoveFilteredPolicy(0, sub); err != nil {
+			return err
 		}
-	}
-	return nil
+
+		// 4.2 添加新策略
+		var rules [][]string
+		for _, perm := range permissions {
+			if perm.Path == "" || perm.Method == "" {
+				continue
+			}
+			// 对应 Casbin 规则: p, role_key, path, method
+			rules = append(rules, []string{sub, perm.Path, perm.Method})
+		}
+
+		if len(rules) > 0 {
+			if _, err := s.Casbin.AddPolicies(rules); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+
+	return err
 }

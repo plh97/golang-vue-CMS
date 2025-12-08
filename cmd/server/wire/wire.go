@@ -16,7 +16,7 @@ import (
 	"go-nunu/pkg/log"
 	"go-nunu/pkg/server/http"
 	"go-nunu/pkg/sid"
-	"go-nunu/pkg/casbin"
+	CasbinPkg "go-nunu/pkg/casbin"
 
 	"github.com/google/wire"
 	"github.com/spf13/viper"
@@ -77,7 +77,7 @@ var awsSet = wire.NewSet(
 
 // 声明 R2 构造函数
 var casbinSet = wire.NewSet(
-	casbinPkg.NewEnforcer, // ⭐ Add the Casbin Enforcer provider here ⭐
+	CasbinPkg.NewEnforcer, // ⭐ Add the Casbin Enforcer provider here ⭐
 )
 
 func NewWire(cfg *viper.Viper, logger *log.Logger) (*app.App, func(), error) {

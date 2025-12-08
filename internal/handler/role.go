@@ -82,7 +82,7 @@ func (h *RoleHandler) UpdateRolePermissions(ctx *gin.Context) {
 
 	// Here you would typically call a service method to update the role's permissions.
 	// For example:
-	err := h.roleService.UpdateRolePermissions(ctx, req.ID, req.PermissionIds)
+	err := h.roleService.UpdateRolePermissions(ctx, int64(req.ID), req.PermissionIds)
 	if err != nil {
 		v1.HandleError(ctx, http.StatusBadRequest, v1.ErrBadRequest, nil)
 		return

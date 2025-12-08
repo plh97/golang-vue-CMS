@@ -8,7 +8,7 @@ type Role struct {
 	Sid  string `json:"sid" gorm:"column:sid;type:varchar(100);uniqueIndex;comment:角色标识"`
 	// Key    string `gorm:"column:key;type:varchar(50);not null;unique" json:"key"`
 	// Status int    `gorm:"column:status;type:tinyint;default:1" json:"status"`
-	// Permissions []Permission `json:"permissions"`
+	Permissions []Permission `json:"permissions" gorm:"many2many:role_permissions;"`
 }
 
 func (m *Role) TableName() string {

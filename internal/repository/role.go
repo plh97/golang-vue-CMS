@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	v1 "go-nunu/api/v1"
 	"go-nunu/internal/model"
 
@@ -10,12 +9,11 @@ import (
 )
 
 type RoleRepository interface {
-	GetRole(ctx context.Context, id int) (*model.Role, error)
-	GetRoleList(ctx context.Context, req v1.GetRoleListRequest) ([]v1.RoleInfo, error)
+	GetRole(ctx context.Context, id int64) (*model.Role, error)
+	GetRoleList(ctx context.Context, req v1.GetRoleListRequest) ([]model.Role, error)
 	GetRoleCount(ctx context.Context, req v1.GetRoleListRequest) (int, error)
 	CreateRole(ctx context.Context, role *model.Role) (*model.Role, error)
 	UpdateRole(ctx context.Context, role *model.Role) (*model.Role, error)
-	GetPermissionsByIds(ctx context.Context, permissionIDs []uint) ([]model.Permission, error)
 }
 
 func NewRoleRepository(
@@ -30,12 +28,9 @@ type roleRepository struct {
 	*Repository
 }
 
-func (r *roleRepository) GetRole(ctx context.Context, id int) (*model.Role, error) {
+func (r *roleRepository) GetRole(ctx context.Context, id int64) (*model.Role, error) {
 	var role model.Role
-	err := r.db.WithContext(ctx).First(&role, id).Error
-	if err != nil {
-		return nil, err
-	}
+
 	return &role, nil
 }
 
@@ -54,26 +49,11 @@ func (r *roleRepository) Get(ctx context.Context, param v1.GetRoleListRequest) *
 	return db
 }
 
-func (r *roleRepository) GetRoleList(ctx context.Context, req v1.GetRoleListRequest) ([]v1.RoleInfo, error) {
-	var roles []v1.RoleInfo
-	err := r.Get(ctx, req).Find(&roles).Error
+func (r *roleRepository) GetRoleList(ctx context.Context, req v1.GetRoleListRequest) ([]model.Role, error) {
+	var roles []model.Role
+	err := r.Get(ctx, req).Preload("Permissions").Find(&roles).Error
 	if err != nil {
 		return nil, err
-	}
-	// TODO: use for loop to get all roles' permission from casbin
-	for i := 0; i < len(roles); i++ {
-		role := &roles[i]
-		list, err := r.e.GetAllNamedRoles(role.Name)
-		if err != nil {
-			return nil, fmt.Errorf("获取角色权限失败: %v", err)
-		}
-		permissions := make([]model.Permission, len(list))
-		for j, permName := range list {
-			permissions[j] = model.Permission{
-				Name: permName,
-			}
-		}
-		role.Permissions = permissions
 	}
 	return roles, nil
 }
@@ -97,13 +77,4 @@ func (r *roleRepository) CreateRole(ctx context.Context, role *model.Role) (*mod
 func (r *roleRepository) UpdateRole(ctx context.Context, role *model.Role) (*model.Role, error) {
 	err := r.db.WithContext(ctx).Save(role).Error
 	return role, err
-}
-
-func (r *roleRepository) GetPermissionsByIds(ctx context.Context, permissionIDs []uint) ([]model.Permission, error) {
-	var permissions []model.Permission
-	err := r.db.WithContext(ctx).Where("id IN ?", permissionIDs).Find(&permissions).Error
-	if err != nil {
-		return nil, err
-	}
-	return permissions, nil
 }

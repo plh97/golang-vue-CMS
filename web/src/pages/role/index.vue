@@ -218,7 +218,7 @@ async function handlePermissionChange(roleId: number, newPermIds: number[]) {
     <LoadingOutlined class="icon" />
   </div>
   <FTable
-    v-show="!loading" always-scrollbar class="table" :height="10" size="small" row-key="id"
+    v-show="!loading" always-scrollbar class="table" :height="10" size="small" row-key="ID"
     :data="data?.list ?? []"
   >
     <FTableColumn fixed="left" prop="ID" label="ID" :width="60" />
